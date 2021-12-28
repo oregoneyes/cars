@@ -1,5 +1,5 @@
 ---
-title: "efficiency"
+title: "Fuel Efficiency Analysis"
 author: "Rusell Glynn"
 date: "12/7/2021"
 output: html_document
@@ -7,28 +7,126 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-data('mtcars')
+
 library(dplyr)
+library(ggplot2)
 library(skimr)
+library(broom)
+library(AICcmodavg)
+data('mtcars')
 
 ```
 
-## R Markdown
+## Questions:
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+1. 'Is an automatic or manual transmission better for fuel efficiency?'
+2. 'Can we quantify the difference in fuel efficiency between the two transmission types?'
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
 
-```{r cars}
-summary(cars)
+## Executive Summary:
+
+Data from mtcars were analyzed to determine if automatic versus manual transmissions are associated with greater fuel efficiency. Exhaustively running through models incorporating various combinations of variables with mpg and transmission type, we conclude that mpg is significantly higher with manual vs automatic transmissions (difference = 7.24 mpg). However, this relationship is attenuated if we include weight and 1/4 mile time into our model (difference = 2.94 mpg).
+
+
+## Data Dictionary:
+
+From the mtcars R help file, we get the following information describing the data frame:
+
+A data frame with 32 observations on 11 (numeric) variables.
+
+1.	mpg	Miles/(US) gallon
+2.	cyl	Number of cylinders
+3.	disp	Displacement (cu.in.)
+4.	hp	Gross horsepower
+5.	drat	Rear axle ratio
+6.	wt	Weight (1000 lbs)
+7.	qsec	1/4 mile time
+8.	vs	Engine (0 = V-shaped, 1 = straight)
+9.	am	Transmission (0 = automatic, 1 = manual)
+10.	gear	Number of forward gears
+11.	carb	Number of carburetors'
+
+## Data Exploration:
+
+Although all of the variables are numeric, it looks like several are actually categorical (cyl, vs, am, gear, carb) rather than continuous. For the purposes of linear modeling, we will convert the categorical variables to factors.
+
+``` {r exploration}
+
+str(mtcars)
+
+# change appropriate numeric variables to factor variables
+
+mtcars2 <- mtcars
+
+mtcars2$cyl <- as.factor(mtcars$cyl)
+mtcars2$vs <- as.factor(mtcars$vs)
+mtcars2$am <- as.factor(mtcars$am)
+mtcars2$gear <- as.factor(mtcars$gear)
+mtcars$carb <- as.factor(mtcars$carb)
+
 ```
 
-## Including Plots
+What is the relationship between mpg and other variables in the data set? Looking at the  relationship grid, we see that many variables are associated with changes in the mpg variable. 
 
-You can also embed plots, for example:
+```{r }
+pairs(mtcars2)
+
+```
+
+
+
+```{r models }
+
+```
+
+The primary variables of interest are mpg (miles per gallon) and transmission type(automatic vs manual). Looking at the simplest model mpg ~ am, we see that transmission type has a highly significant effect on the mpg with automatic transmissions having a mean of 17.1 and compared to a mean of 24.392 (intercept + am1) for manual transmissions (p < .000285).
+
+```{r }
+
+fit1 <- lm(mpg ~ am, data = mtcars2)
+summary(fit1)
+
+fit1$coefficients
+
+```
+
+Plotting mpg data grouped by transmission type shows this relationship with 0 being the automatic transmission data and 1 being the manual transmission data.
+
+```{r }
+
+
+ggplot(mtcars2, aes(am, mpg)) +
+    geom_boxplot() 
+    
+
+```
+
+After calculating the most complex linear model (fit2) that includes all the variables. We can use the step function to find the best model (opt).
 
 ```{r pressure, echo=FALSE}
-plot(pressure)
+
+fit2 <- lm(mpg ~ ., mtcars2)
+opt <- step(fit2, direction = 'both')
+
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+Comparing the three variable model (opt) with the one variable model (fit1) using the anova R function, we see that the three variable model is better with a high level of significance. The three variable opt model has an adjusted R-squared of .8336 compared to .3385 for the one variable fit1. From the opt model we can see that there is a 2.9358 increase in mpg with the manual transmission when wt and qsec are incorporated into the our modeling.
+
+
+```{r }
+
+anova(fit1, opt)
+summary(fit1)
+summary(opt)
+
+```
+
+## Plotting the residual
+
+Looking at residual plot we don't see signs of serious heteroscedasticity. 
+```{r }
+
+par(mfrow = c(2,2))
+plot(opt)
+
+```
