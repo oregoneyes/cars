@@ -1,12 +1,12 @@
 ---
-title: "Fuel Efficiency Analysis"
+title: "Fuel Efficiency Analysis by Car Transmission Type"
 author: "Rusell Glynn"
 date: "12/7/2021"
-output: html_document
+output: pdf_document
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+```{r setup, include=FALSE, results='hide', message=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
 
 library(dplyr)
 library(ggplot2)
@@ -50,7 +50,7 @@ A data frame with 32 observations on 11 (numeric) variables.
 
 Although all of the variables are numeric, it looks like several are actually categorical (cyl, vs, am, gear, carb) rather than continuous. For the purposes of linear modeling, we will convert the categorical variables to factors.
 
-``` {r exploration}
+``` {r exploration, results = FALSE}
 
 str(mtcars)
 
@@ -66,14 +66,6 @@ mtcars$carb <- as.factor(mtcars$carb)
 
 ```
 
-What is the relationship between mpg and other variables in the data set? Looking at the  relationship grid, we see that many variables are associated with changes in the mpg variable. 
-
-```{r }
-pairs(mtcars2)
-
-```
-
-
 
 ```{r models }
 
@@ -81,51 +73,59 @@ pairs(mtcars2)
 
 The primary variables of interest are mpg (miles per gallon) and transmission type(automatic vs manual). Looking at the simplest model mpg ~ am, we see that transmission type has a highly significant effect on the mpg with automatic transmissions having a mean of 17.1 and compared to a mean of 24.392 (intercept + am1) for manual transmissions (p < .000285).
 
+## One independent simple variable model:
+
 ```{r }
 
 fit1 <- lm(mpg ~ am, data = mtcars2)
 summary(fit1)
 
-fit1$coefficients
-
 ```
 
-Plotting mpg data grouped by transmission type shows this relationship with 0 being the automatic transmission data and 1 being the manual transmission data.
+Plotting mpg data grouped by transmission type shows this relationship with 0 being the automatic transmission data and 1 being the manual transmission data. See Appendix.
 
-```{r }
+# Finding optimal linear model using step function:
 
+After calculating the most complex linear model (fit2) that includes all the variables (lm(mpg~. data = mtcars), we can use the step function to find the best model (opt). We see that the optimal model includes wt, and qsec as independent variables.
 
-ggplot(mtcars2, aes(am, mpg)) +
-    geom_boxplot() 
-    
-
-```
-
-After calculating the most complex linear model (fit2) that includes all the variables. We can use the step function to find the best model (opt).
-
-```{r pressure, echo=FALSE}
+```{r pressure, echo=FALSE, results = FALSE}
 
 fit2 <- lm(mpg ~ ., mtcars2)
 opt <- step(fit2, direction = 'both')
 
 ```
 
-Comparing the three variable model (opt) with the one variable model (fit1) using the anova R function, we see that the three variable model is better with a high level of significance. The three variable opt model has an adjusted R-squared of .8336 compared to .3385 for the one variable fit1. From the opt model we can see that there is a 2.9358 increase in mpg with the manual transmission when wt and qsec are incorporated into the our modeling.
-
-
-```{r }
-
-anova(fit1, opt)
-summary(fit1)
+```{r output = TRUE}
 summary(opt)
 
 ```
+Comparing the three variable model (opt) with the one variable model (fit1) using the anova R function, we see that the three variable model is better with a high level of significance. The three variable opt model has an adjusted R-squared of .8336 compared to .3385 for the one variable fit1. From the opt model we can see that there is a 2.9358 increase in mpg with the manual transmission when wt and qsec are incorporated into the our modeling.
 
-## Plotting the residual
 
-Looking at residual plot we don't see signs of serious heteroscedasticity. 
+```{r , results = FALSE}
+
+anova(fit1, opt)
+
+```
+
+The residuals vs fitted plot shows reasonable linearity for our optimal model and no signs of serious heteroscedasticity. See Appendix.
+
+# Appendix
+
+
+# Boxplot of the mpg vs transmission type(0 = automatic, 1 = manual)
+
+```{r}
+
+ggplot(mtcars2, aes(am, mpg)) +
+    geom_boxplot() 
+    
+```
+
+## Residual Plot of optimal model:
+
+
 ```{r }
-
 par(mfrow = c(2,2))
 plot(opt)
 
